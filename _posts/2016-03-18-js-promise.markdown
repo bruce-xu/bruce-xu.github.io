@@ -3,7 +3,7 @@ layout: post
 title:  JS Promise的实现原理
 date:   2016-03-18 21:15:10 +0800
 categories: [JS, Promise]
-permalink: js/promise
+permalink: blogs/js/promise
 tags: Promise
 keywords: JS,Promise,Promise/A+
 excerpt: JS Promise的实现原理，可通过Promise/A+规范
