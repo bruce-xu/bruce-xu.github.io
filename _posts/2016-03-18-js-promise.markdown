@@ -6,7 +6,7 @@ categories: [JS, Promise]
 permalink: blogs/js/promise
 tags: Promise
 keywords: JS,Promise,Promise/A+
-excerpt: JS Promise的实现原理，可通过Promise/A+规范
+excerpt: JS Promise的实现原理，可通过Promise/A+规范的所有测试用例。
 ---
 　　在前端开发过程中，会经常使用到 Promise 模式，可以使异步代码看起来如同步般清新易读，从而从回调地狱中解脱出来。ES6中 已原生支持 Promise，但在未支持的浏览器中还需要通过 polyfill 模拟实现。下面介绍一下自己的实现过程，此实现可通过 [Promise/A+测试集][promise-tests] 的所有测试。
 
