@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="description" content="Javascript bagong. 五子棋">
+        <title>五子棋</title>
+        <style type="text/css">
+            .chessboard {
+                background: pink;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas class="chessboard" id="chessboard" width="750px" height="750px"></canvas>
+        <script src="./Gobang.js"></script>
+        <script>
+            var chessboard = document.getElementById('chessboard');
+            var goBang = Gobang(chessboard);
+            goBang.start();
+        </script>
+    </body>
+</html>
