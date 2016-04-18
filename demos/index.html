@@ -1,0 +1,25 @@
+---
+layout: page
+title: Demos
+permalink: /demos/
+categories: [demos]
+---
+
+<div class="home">
+
+  <ul class="post-list">
+    {% for page in site.pages %}
+        {% if page.categories contains 'demo' %}
+        <li>
+        <span class="post-meta">{{ page.date | date: "%b %-d, %Y" }}</span>
+
+        <h2>
+          <a class="post-link" href="{{ page.url | prepend: site.baseurl }}">{{ page.title }}</a>
+        </h2>
+        <p>{{ page.excerpt }}</p>
+      </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+
+</div>

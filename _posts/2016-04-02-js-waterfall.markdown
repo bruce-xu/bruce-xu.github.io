@@ -6,7 +6,6 @@ categories: [JS, Waterfall]
 permalink: blogs/js/waterfall
 tags: Waterfall
 keywords: JS,Waterfall,瀑布流
-excerpt: 图片瀑布流展现的实现。
 ---
 
 　　上一篇结尾处说再接再厉，希望能多写点东西。半个多月过去了，还没有动静。果然男人的话是不可信的😓 。为了挽回一点仅有的信用，还是赶快写点东西吧。

@@ -23,6 +23,8 @@
     var CHESSBOARD_HEIGHT = 750;
     // 棋子宽度与棋格宽度比
     var CHESS_RATIO = 0.4;
+    // 5个棋子连排时赢得比赛
+    var WIN_COUNT = 5;
     // 下棋双方（白子还是黑子）
     var Side = {
         WHITE: 1,
@@ -145,6 +147,19 @@
         context.clearRect(0, 0, width, height);
         context.strokeStyle = 'red';
 
+        context.beginPath();
+        context.strokeText(0, 12, 25);
+
+        for (var i = 1; i < V_SIZE; i++) {
+            context.beginPath();
+            context.strokeText(i, i * cellWidth + cellWidth / 2 - 5, 20);
+        }
+
+        for (var i = 1; i < V_SIZE; i++) {
+            context.beginPath();
+            context.strokeText(i, 7, i * cellHeight + cellHeight / 2);
+        }
+
         for (var i = 0; i < V_SIZE; i++) {
             var vOffset = i * cellHeight + cellHeight / 2;
             context.beginPath();
@@ -266,7 +281,7 @@
      */
     function calculateCoordScore(coord, thisObj) {
         var score = 0;
-        for (var direction = 0; direction < 8; direction++) {
+        for (var direction = 0; direction < 4; direction++) {
             score += calculatePreDirectionScore(coord, direction, thisObj);
         }
 
@@ -282,39 +297,94 @@
      * @return {number} 某一个棋格在某一方向上的得分
      */
     function calculatePreDirectionScore(coord, direction, thisObj) {
-        var score = 0;
-        var step = getStep(direction);
+        var x = coord.x;
+        var y = coord.y;
         var states = thisObj.states;
-        var preState = this.side;
-        var sameCount = 0;
-        for (var i = 1; i < 5; i++) {
-            var targetX = coord.x + i * step.x;
-            var targetY = coord.y + i * step.y;
+        var side = thisObj.side;
+        var maxScore = 0;
+        var step = getStep(direction);
+        for (var i = 0; i < WIN_COUNT; i++) {
+            var startX = x - (4 - i) * step.x;
+            var startY = y - (4 - i) * step.y;
             // 已经到达棋盘边界
-            if (targetX < 0 || targetX >= H_SIZE || targetY < 0 || targetY >= V_SIZE) {
-                break;
+            if (!checkBoundary(startX, startY)) {
+                continue;
             }
 
-            var currentState = states[targetX][targetY];
+            var preState = 0;
+            var score = 0;
+            var sameCount = 0;
+            var spaceCount = 0;
+            var meetCurrent = false;
+            var calculateSpace = true;
+            for (var j = 0; j < WIN_COUNT; j++) {
+                var targetX = startX + j * step.x;
+                var targetY = startY + j * step.y;
+                var currentState;
 
-            if (!currentState) {
-                break;
-            }
+                // 已经到达棋盘边界
+                if (!checkBoundary(targetX, targetY)) {
+                    break;
+                }
 
-            if (i === 1 || preState === currentState) {
-                sameCount++;
+                if (targetX === x && targetY === y) {
+                    meetCurrent = true;
+                    continue;
+                }
+
+                currentState = states[targetX][targetY];
+                if (calculateSpace) {
+                    if (!currentState) {
+                        spaceCount++;
+                    }
+                    else if (!meetCurrent) {
+                        spaceCount = 0;
+                    }
+                    else {
+                        calculateSpace = false;
+                    }
+                }
+
+                if (j) {
+                    if (!preState) {
+                        if (currentState) {
+                            preState = currentState;
+                            sameCount++;
+                            spaceCount = 0;
+                        }
+
+                        continue;
+                    }
+
+                    if (!currentState) {
+                        continue;
+                    }
+                    else if (currentState !== preState) {
+                        sameCount = 0;
+                        break;
+                    }
+                    else {
+                        sameCount++;
+                    }
+                }
+                else if (currentState) {
+                    sameCount++;
+                }
+
                 preState = currentState;
             }
-            else {
-                break;
+
+            if (sameCount) {
+                score = Math.pow(10, sameCount)
+                    + (preState === side ? 5 : 0)
+                    - (1 * spaceCount);
             }
+
+            // maxScore = Math.max(score, maxScore);
+            maxScore += score;
         }
 
-        if (thisObj.side === preState) {
-            sameCount++;
-        }
-
-        return Math.pow(10, sameCount);
+        return maxScore;
     }
 
     /**
@@ -328,33 +398,41 @@
         var x = coord.x;
         var y = coord.y;
         var states = thisObj.states;
-        var side = thisObj.side;
         // 判断是否已赢得比赛
-        for (var direction = 0; direction < 8; direction++) {
-            var count = 1;
+        for (var direction = 0; direction < 4; direction++) {
             var step = getStep(direction);
-            for (var i = 1; i < 5; i++) {
-                var targetX = x + i * step.x;
-                var targetY = y + i * step.y;
+            for (var i = 0; i < WIN_COUNT; i++) {
+                var startX = x - (4 - i) * step.x;
+                var startY = y - (4 - i) * step.y;
                 // 已经到达棋盘边界
-                if (targetX < 0 || targetX >= H_SIZE || targetY < 0 || targetY >= V_SIZE) {
-                    break;
+                if (!checkBoundary(startX, startY)) {
+                    continue;
                 }
 
-                if (states[targetX][targetY] === side) {
-                    count++;
-                }
-                else {
-                    break;
-                }
-            }
+                var preState = states[startX][startY];
+                for (var count = 0; count < WIN_COUNT; count++) {
+                    var targetX = startX + count * step.x;
+                    var targetY = startY + count * step.y;
+                    // 已经到达棋盘边界
+                    if (!checkBoundary(targetX, targetY)) {
+                        break;
+                    }
 
-            if (count === 5) {
-                return side === Side.WHITE ? Winner.WHITE : Winner.BLACK;
+                    var currentState = states[targetX][targetY];
+                    if (!currentState || currentState !== preState) {
+                        break;
+                    }
+
+                    preState = currentState;
+                }
+
+                if (count === WIN_COUNT) {
+                    return preState === Side.WHITE ? Winner.WHITE : Winner.BLACK;
+                }
             }
         }
 
-        // 若没有哪一方赢得比赛，则接着判断是否还有棋格未被下满
+        // 若到目前为止没有哪一方赢得比赛，则接着判断棋盘是否还有空间，有的话则继续比赛
         for (var x = 0; x < H_SIZE; x++) {
             for (var y = 0; y < V_SIZE; y++) {
                 if (!states[x][y]) {
@@ -384,35 +462,34 @@
                 break;
             case 1:
                 stepX = 1;
-                stepY = -1;
+                stepY = 1;
                 break;
             case 2:
                 stepX = 0;
-                stepY = -1;
+                stepY = 1;
                 break;
             case 3:
                 stepX = -1;
-                stepY = -1;
-                break;
-            case 4:
-                stepX = -1;
-                stepY = 0;
-                break;
-            case 5:
-                stepX = -1;
-                stepY = 1;
-                break;
-            case 6:
-                stepX = 0;
-                stepY = 1;
-                break;
-            case 7:
-                stepX = 1;
                 stepY = 1;
                 break;
         }
 
         return {x: stepX, y: stepY};
+    }
+
+    /**
+     * 检查坐标点是否在棋盘边界内
+     *
+     * @param {number} x x轴坐标
+     * @param {number} y y轴坐标
+     * @return {boolean} 标识是否在边界内
+     */
+    function checkBoundary(x, y) {
+        if (x < 0 || x >= H_SIZE || y < 0 || y >= V_SIZE) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
