@@ -12,7 +12,7 @@ keywords: Hybrid,JS,Tips
 
 #### 1、iOS 下 webview 中，局部滚动很卡 ####
 
-　　当页面内容超过窗口区域时，可滚动展示页面内容，滚动时也很顺畅，此为全局滚动。当页面内部，如某个 div 的内容超过其大小时，如有设置 CSS `overflow: auto（或 scroll）`，此 div 的内容也应该可以滚动，PC 上浏览器即如此，此为局部滚动。但在移动端，早期浏览器是不支持局部滚动的，所以出现了 iScroll 等解决方案，但同时也引入了性能等问题。好在 iOS 5.0、Android 4.0 以后系统原生支持了局部滚动。Android 下直接正常设置 CSS `overflow: auto（或 scroll）`即可，但 iOS 滚动起来依旧不流畅，且手指移开屏幕后，滚动立刻停止，没有全局滚动时的惯性滚动效果。iOS 上还需要增加一个私有的 CSS 属性，以达到流畅滚动。所以，想让局部滚动流畅，需给滚动元素上添加如下的 CSS：
+　　当页面内容超过窗口区域时，可滚动展示页面内容，滚动时也很顺畅，此为全局滚动。当页面内部，如某个 div 的内容超过其大小时，如有设置 CSS `overflow: auto（或 scroll）`，此 div 的内容也应该可以滚动，PC 上浏览器即如此，此为局部滚动。但在移动端，早期浏览器是不支持局部滚动的，所以出现了 iScroll 等解决方案，但同时也引入了性能等问题。好在 iOS 5.0、Android 4.0 以后系统原生支持了局部滚动。Android 下直接正常设置 CSS `overflow: auto（或 scroll）`即可，但 iOS 下滚动起来依旧不流畅，且手指移开屏幕后，滚动立刻停止，没有全局滚动时的惯性滚动效果。iOS 上还需要增加一个私有的 CSS 属性，以达到流畅滚动。所以，想让局部滚动流畅，需给滚动元素上添加如下的 CSS：
 
 ``` css
 overflow: auto;
@@ -21,9 +21,28 @@ overflow: auto;
 
 #### 2、iOS 下 webview 中，滚动时 JS 不执行 ####
 
-　　由于苹果的限制，iOS 上的第三方应用（包括 Chrome 等第三方浏览器）只能使用与 Safari 相同的内核，在 iOS 8 以前，提供了UIWebView 组件给第三方应用使用，iOS 8 开始，提供了 WKWebView 组件。UIWebView 中，由于性能问题，页面滚动时限制了 JS 的执行，滚动结束后才会执行。这就导致了 scroll 事件只会在滚动结束后执行一次，包括 setTimeout、setInterval 等操作在滚动时都不会执行，这是底层限制，无法绕过。所以最好不要在 scroll 事件中做操作，如果确实有此类需求的话，可以在 touchmove 中处理，但手指离开屏幕后就不再触发 touchmove 事件，而正常滚动时，由于有惯性滚动，手指离开后，还会滚动一段距离，逐渐停止。手指离开后的这一段滚动，并不能响应任何操作。所以用 touchmove 来解决此问题，并不完全可行。最可行的方案是在应用中使用 WKWebView 取代 UIWebView，不仅可以支持滚动时执行 JS 代码，而且还有其它诸多好处，如使用了和 Safari 相同的 JS 引擎 Nitro，带来了更好的性能等。当然，使用 WKWebView，意味着不再兼容 iOS 7 及之前的系统，除非花很大的代价做兼容。不过，是时候可以抛弃 iOS 7 了，毕竟目前占比量已经非常低了。
+　　由于苹果的限制，iOS 上的第三方应用（包括 Chrome 等第三方浏览器）内部有加载网页需求时，只能使用与 Safari 相同的内核。在 iOS 8 以前，苹果提供了名叫 UIWebView 的网络组件给第三方应用使用，iOS 8 开始，提供了新的叫 WKWebView 的网络组件。UIWebView 中，由于性能问题，页面滚动时限制了 JS 的执行，滚动结束后才会执行。这就导致了 scroll 事件只会在滚动结束后执行一次，包括 setTimeout、setInterval 等操作在滚动时都不会执行。这是底层限制，无法绕过，所以最好不要在 scroll 事件中做操作。如果确实有此类需求的话，某些情况下可以在 touchmove 中处理，但手指离开屏幕后就不再触发 touchmove 事件，而正常滚动时，由于有惯性滚动，手指离开后，还会滚动一段距离，逐渐停止。手指离开后的这一段滚动，并不能响应任何操作。所以用 touchmove 来解决 scroll 不触发的问题，并不完全可行。最可行的方案是在应用中使用 WKWebView 取代 UIWebView，不仅可以支持滚动时执行 JS 代码，而且还有其它诸多好处，如使用了和 Safari 相同的 JS 引擎 Nitro（此处吐槽一下苹果，iOS 4.3 的 Safari 中就使用了新的 JS 引擎 Nitro，但 UIWebView 中一直使用的还是性能差的 JavascriptCore 引擎，致使 iOS 上早期的第三方浏览器的性能较 Safari 有很大的差距。此种情况随着 iOS 8 中开放的 WKWebView 而改善），带来了更好的性能等。当然，使用 WKWebView，意味着不再兼容 iOS 7 及之前的系统，除非花很大的代价做兼容。不过，是时候可以抛弃 iOS 7 了，毕竟目前占比量已经非常低了。
 
 　　测试下来发现 Android 下滚动时可以实时触发 scroll 事件，JS 也会被执行。网上说 Android 4.1 之前，滚动时 scroll 事件不会实时触发。不过现在 Android 4.0 及之前的系统占有率已经非常低了。
+
+　　顺便提一下，针对 scroll、resize 等会被频繁触发的事件，最好不要在事件处理函数中处理需要大量计算或渲染的操作，否则会引起浏览器卡顿甚至假死。同时，为了性能考虑，可以针对事件处理函数做截流处理，即设置某一时间间隔内才执行一次回调函数。如下代码即为简单的截流处理函数：
+
+``` javascript
+function throttle(method, delay) {
+  var isThrottling = false;
+  return function() {
+    var context = this;
+    var args = arguments;
+    if (!isThrottling) {
+      isThrottling = true;
+      setTimeout(function () {
+        isThrottling = false;
+        method.apply(context, args);
+      }, delay || 300);
+    }
+  }
+}
+```
 
 #### 3、粘性定位 ####
 
@@ -124,6 +143,4 @@ body {
 }
 ```
 
-#### 8、iOS 下 fixed bug ####
-
-#### 9、babel-polyfill 对 Promise 的封装有 bug ####
+#### 8、babel-polyfill 对 Promise 的封装有 bug ####
