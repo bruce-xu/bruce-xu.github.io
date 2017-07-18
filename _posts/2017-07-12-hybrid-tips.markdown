@@ -144,3 +144,5 @@ body {
 ```
 
 #### 8、babel-polyfill 对 Promise 的封装有 bug ####
+
+　　目前项目中编码阶段使用 ES6 的语法，打包阶段通过 babel 转化成 ES5 的语法，同时引入 babel-polyfill 做兼容。babel-polyfill 中有针对 Promise 的实现。但调试时发现其中的 Promise 实现有 bug。我们有个场景，需要在某个页面中同时请求两个接口，但有一定的概率下会出现第二个请求的 Promise 对象中的 resolve 方法不执行。解决方案是用 bluebird 替换 babel-polyfill 中的 Promise 实现。bluebird 号称是性能最好的 Promise 实现，甚至比原生的实现性能还要好（对此说法有疑惑，持保留态度）。使用 bluebird 后解决了上述的问题，同时带来了号称的更好的性能，所以也就心安理得的这么做了，虽然这么做会增加一点点复杂度。
