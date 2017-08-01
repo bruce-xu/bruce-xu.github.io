@@ -26,13 +26,17 @@ function asyncTask(callback) {
   }, 1000);
 }
 
-asyncTask(function() {
-  // xxx
+function runTasks() {
   asyncTask(function() {
     // xxx
-    asyncTask();
+    asyncTask(function() {
+      // xxx
+      asyncTask();
+    });
   });
-});
+}
+
+runTasks();
 
 // 输出如下内容（由于受 JS 是单线程的语言特性影响，定时器操作每次执行时或多或少会有误差，
 // 具体误差大小，也与当前的代码结构有关。所以需要精确时间操作时，需要考虑到此影响）
@@ -80,15 +84,13 @@ function asyncTask() {
   });
 }
 
-function executeTasks() {
+function runTasks() {
   asyncTask()
     .then(asyncTask)
     .then(asyncTask)
 }
 
-executeTasks();
-
-
+runTasks();
 ```
 
 　　可以看到，当多个异步操作嵌套时，通过 Promise 封装后，调用起来会非常方便，且比回调函数看起来直观很多，`then` 方法也更有语义，阅读上述调用代码，可以很容易的知道，表达的是先调用一个异步任务，然后再调用另一个异步任务，接着再调用一个异步任务（Promise 也可以封装同步操作，将其转化为异步操作）。
@@ -114,6 +116,61 @@ asyncTask2();
 asyncTask3();
 ```
 
-　　如果上述函数中分别封装了三个异步操作的话，直接这样调用肯定不行，三个异步操作会同时开始，而不是相互依赖，前一个完成后再调用后一个。可以通过 ES6 的 Generator 来完成这样的需求。Generator 本意是生成器，调用生成器函数后会返回它的迭代器对象。手动调用迭代器对象的 next 方法后，会执行生成器函数的代码，并在后续第一个 yield 表达式的位置停止，直到接着调用 next 方法，才开始继续执行生成器函数的下一个 yield 之前的代码。通过不停的调用 next 方法，渐进式的执行完生成器函数内的所有代码。生成器函数的这个特性，正好满足异步操作的依次调用的需求（虽然它的本意不是专门用于解决此问题）。通过 Generator 来改造上述的回调嵌套
+　　如果上述函数中分别封装了三个异步操作的话，直接这样调用肯定不行，三个异步操作会同时开始，而不是相互依赖，前一个完成后再调用后一个。可以通过 ES6 的 Generator 来完成这样的需求。Generator 本意是生成器，调用生成器函数后会返回它的迭代器对象。手动调用迭代器对象的 next 方法后，会执行生成器函数的代码，并在后续第一个 yield 表达式的位置停止，直到接着调用 next 方法，才开始继续执行生成器函数的下一个 yield 之前的代码。通过不停的调用 next 方法，渐进式的执行完生成器函数内的所有代码。生成器函数的这个特性，正好满足异步操作的依次调用的需求（虽然它的本意不是专门用于解决此问题）。通过 Generator 来改造上述的回调嵌套问题的代码如下：
+
+``` javascript
+var last = new Date().getTime();
+var gen = runTasks();
+
+function asyncTask() {
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      var now = new Date().getTime();
+      console.log('Wait: ' + (now - last));
+      last = now;
+
+      resolve();
+    }, 1000);
+  });
+}
+
+function* runTasks() {
+  yield asyncTask();
+  yield asyncTask();
+  yield asyncTask();
+}
+
+function run() {
+  var result = gen.next();
+  if (!result.done) {
+    result.value.then(run);
+  }
+}
+
+run();
+```
+
+　　由上述代码可见，只需通过 `function*` 来定义调用异步操作的函数为生成器函数，同时在异步操作函数调用前加上 yield 关键字，，即可让异步操作调用，看起来如同步操作代码般直接，便于理解。但由于生成器函数内可能会包含多个异步操作调用，如果每个操作都需要手动调用 next 方法触发迭代器的继续执行的话，则代码完全不具有灵活及复用性。所以通常会提供一个叫运行器的函数去自动触发迭代器的自动执行，如上面的 run 函数。
+
+　　上述 run 方法太简单不具有通用性，下面提供一个较通用的运行器：
+
+``` javascript
+function run(generator) {
+  var gen = generator();
+  function next(data) {
+    var ret = gen.next(data);
+    if (ret.done) {
+      return;
+    }
+    ret.value(function(err, data) {
+      if (err) {
+        throw (err);
+      }
+      next(data);
+    });
+  }
+  next();
+}
+```
 
 #### async/await ####
