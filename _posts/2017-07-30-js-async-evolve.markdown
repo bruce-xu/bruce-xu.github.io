@@ -176,3 +176,51 @@ function run(generator) {
 　　知名的 node web 框架 koa 的早期版本就是使用了 Generator 特性，提供了名叫 co 的简单的库，用于自动执行异步操作，其实就相对与上面说的运行器。koa 2.0 中已改为使用下面将会介绍的 async/await。
 
 #### async/await ####
+
+　　虽然利用 Generator 函数处理异步操作较直接使用 Promise 更直观，但还是有些问题，如：
+
++ 标识中断点的 yield 关键字语义上不够直观。
++ 调用时较麻烦，需要先执行生成器函数返回其迭代器对象，生成器内定义了多少个 yield 语句，就要调用迭代器对象的 next 方法多少次。虽然可以通过封装运行器函数来自动遍历迭代器，但会带来代码的复杂度。
+
+　　使用 Generator 来处理异步操作嵌套问题，只是利用了其能力的副产品，而 ES7 中的 async 函数才是此问题的终极解决方案。 async 函数可以看作是 Generator 函数的语法糖，它们的使用方式很相似，只需将 `function*` 换成 `async function`，同时将 `yield` 换成 `await` 即可。相比于 Generator 的如上缺点，async 函数具有如下优点：
+
++ 更具有语义。使用 async 关键字标识的函数，可以很直接的说明这是一个封装了异步操作的函数；await 关键字标识的语句，也可以很容易让人联想到这是一个异步调用，需要等待其完成结果。
++ 具有自执行特性。Generator 函数需要先被调用返回其迭代器，然后依次调用迭代器的 next 方法，才能渐进的执行完所有代码，所以出现了 co 等执行器函数，但调用起来依然较麻烦。async 函数内的调用的异步操作，可以被自动执行，只需如调用最普通函数般调用 async 函数即可，真正做到了同步方式书写异步代码。
++ 通用性更强。Generator 为了能自动执行，执行器会限制异步操作函数的返回格式，如只能返回 Promise 对象或具有特定定义规则的函数（Thunk）。而 async 函数内的 await 语句，既可以支持异步操作（返回 Promise 对象），也可以支持同步操作（如返回原始类型数值），更具有通用性。
++ 统一的接口。async 函数会统一返回 Promise 对象，有统一的接口，方便串联多个操作。
+
+　　使用 async 函数改造上述代码为：
+
+``` javascript
+var last = new Date().getTime();
+
+function asyncTask() {
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      var now = new Date().getTime();
+      console.log('Wait: ' + (now - last));
+      last = now;
+
+      resolve(parseInt(Math.random() * 10));
+    }, 1000);
+  });
+}
+
+async function runTasks() {
+  var v1 = await asyncTask();
+  var v2 = await asyncTask();
+  var v3 = await asyncTask();
+  var v4 = await 100;
+  console.log(v1, v2, v3, v4);
+}
+
+var result = runTasks();
+console.log(result);
+
+// 输出结果为
+Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
+Wait: 1003
+Wait: 1000
+Wait: 1001
+2 6 3 100
+```
