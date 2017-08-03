@@ -109,7 +109,7 @@ asyncTask()
 
 #### Generator ####
 
-　　Promise 虽然比使用异步回调嵌套更直观且更有语义，但多个操作写在一条语句中，还是不够直观，当操作一多时，不便阅读。就像是一口气说了几件事，还不带标点符号。更直观的方式是一条语句描述一件事，转化为代码即是：
+　　Promise 虽然比使用异步回调嵌套更直观且更有语义，但多个操作写在一条语句中，还是不够直观，当操作一多时，不便阅读。就像是一口气说了几件事，还不带加标点符号的。更直观的方式是一条语句描述一件事，转化为代码即是：
 
 ``` javascript
 asyncTask1();
@@ -120,42 +120,28 @@ asyncTask3();
 　　如果上述函数中分别封装了三个异步操作的话，直接这样调用肯定不行，三个异步操作会同时开始，而不是相互依赖，前一个完成后再调用后一个。可以通过 ES6 的 Generator 来完成这样的需求。Generator 本意是生成器，调用生成器函数后会返回它的迭代器对象。手动调用迭代器对象的 next 方法后，会执行生成器函数的代码，并在后续第一个 yield 表达式的位置停止，直到接着调用 next 方法，才开始继续执行生成器函数的下一个 yield 之前的代码。通过不停的调用 next 方法，渐进式的执行完生成器函数内的所有代码。生成器函数的这个特性，正好满足异步操作的依次调用的需求（虽然它的本意不是专门用于解决此问题）。通过 Generator 来改造上述的回调嵌套问题的代码如下：
 
 ``` javascript
-var last = new Date().getTime();
-var gen = runTasks();
-
-function asyncTask() {
+function asyncTask(hasErr) {
   return new Promise(function (resolve, reject) {
     setTimeout(function () {
-      var now = new Date().getTime();
-      console.log('Wait: ' + (now - last));
-      last = now;
-
-      resolve();
+      if (hasErr) {
+        reject('Throw error');
+      } else {
+        resolve(parseInt(Math.random() * 10));
+      }
     }, 1000);
   });
 }
 
 function* runTasks() {
-  yield asyncTask();
-  yield asyncTask();
-  yield asyncTask();
+  var v1 = yield asyncTask();
+  console.log('v1: ' + v1);
+  var v2 = yield asyncTask();
+  console.log('v2: ' + v2);
+  var v3 = yield asyncTask();
+  console.log('v3: ' + v3);
+  console.log('Done');
 }
 
-function run() {
-  var result = gen.next();
-  if (!result.done) {
-    result.value.then(run);
-  }
-}
-
-run();
-```
-
-　　由上述代码可见，只需通过 `function*` 来定义调用异步操作的函数为生成器函数，同时在异步操作函数调用前加上 yield 关键字，即可让异步操作调用，看起来如同步代码般直接、便于理解。但由于生成器函数内可能会包含多个异步操作调用，如果每个操作都需要手动调用 next 方法触发迭代器的继续执行的话，则代码完全不具有灵活及复用性。所以通常会提供一个叫运行器的函数去自动触发迭代器的自动执行，如上面的 run 函数。为了能够自动执行生成器中的异步操作，对异步操作对封装需要有统一的规则，最简单的方式是如上面的 asyncTask 函数一样，返回一个 Promise 对象。
-
-　　上述 run 方法太简单不具有通用性，下面提供一个较通用的运行器：
-
-``` javascript
 function run(generator) {
   var gen = generator();
   function next(data) {
@@ -163,16 +149,33 @@ function run(generator) {
     if (ret.done) {
       return;
     }
-    ret.value(function(err, data) {
-      if (err) {
-        throw (err);
-      }
+    ret.value.then(function (data) {
       next(data);
+    }, function (err) {
+      throw(err);
     });
   }
   next();
 }
+
+run(runTasks);
+
+// 输出如下：
+v1: 8
+v2: 0
+v3: 1
+Done
 ```
+
+　　上面的例子可以看出 Generator 函数的一些特点：
+
++ 通过 `function*` 来定义生成器函数，通过 yield 关键字来标识生成器内的异步操作
++ 异步操作（yield 关键字标识的语句）可以和同步操作同等看待，后续代码会等到异步操作完成返回结果后再执行
++ 调用 Generator 函数并不会直接执行函数内容，而是返回其迭代器对象，通过不停的调用迭代器对象的 next 方法，来遍历执行 Generator 函数体
++ 迭代器对象的 next 方法通过返回值向外传递数据。返回值是一个对象，包含 done 和 value 属性（如 {done: false, value: xxx}）。done 为 boolean 类型，表示当前迭代器是否已遍历完；value 表示 yield 后面的表达式的返回值
++ 迭代器对象的 next 方法通过接收参数向内传递数据。参数被用于 yield 前面的赋值语句
+
+　　由上述代码可见，Generator 函数来封装异步操作，会如同步代码般直接、便于理解。但有一个问题：由于生成器函数内可能会包含多个异步操作调用，每个操作都需要对应手动调用一次迭代器的 next 方法。如果依赖如此手动调用的话，则代码完全不具有灵活及复用性。所以通常会提供一个叫运行器的函数去触发迭代器的自动执行，如上面的 run 函数即可当作最简单的运行器。为了能够通过运行器使迭代器自动执行起来，需要对异步操作按统一的规则进行封装。最简单的封装方式是使异步操作函数返回一个 Promise 对象（如上例中的 asyncTask 函数），复杂一点的可以使用 Thunk 函数模式。
 
 　　知名的 node web 框架 koa 的早期版本就是使用了 Generator 特性，提供了名叫 co 的简单的库，用于自动执行异步操作，其实就相对与上面说的运行器。koa 2.0 中已改为使用下面将会介绍的 async/await。
 
