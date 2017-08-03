@@ -190,18 +190,12 @@ function run(generator) {
 + 通用性更强。Generator 为了能自动执行，执行器会限制异步操作函数的返回格式，如只能返回 Promise 对象或具有特定定义规则的函数（Thunk）。而 async 函数内的 await 语句，既可以支持异步操作（返回 Promise 对象），也可以支持同步操作（如返回原始类型数值），更具有通用性。
 + 统一的接口。async 函数会统一返回 Promise 对象，有统一的接口，方便串联多个操作。
 
-　　使用 async 函数改造上述代码为：
+　　使用 async 函数的示例如下：
 
 ``` javascript
-var last = new Date().getTime();
-
-function asyncTask() {
+function asyncTask(hasErr) {
   return new Promise(function (resolve, reject) {
     setTimeout(function () {
-      var now = new Date().getTime();
-      console.log('Wait: ' + (now - last));
-      last = now;
-
       resolve(parseInt(Math.random() * 10));
     }, 1000);
   });
@@ -209,19 +203,94 @@ function asyncTask() {
 
 async function runTasks() {
   var v1 = await asyncTask();
+  console.log('v1: ' + v1);
   var v2 = await asyncTask();
-  var v3 = await asyncTask();
+  console.log('v2: ' + v2);
+  var v3 = await asyncTask(true);
+  console.log('v3: ' + v3);
   var v4 = await 100;
-  console.log(v1, v2, v3, v4);
+  console.log('v4: ' + v4);
 }
 
 var result = runTasks();
 console.log(result);
+result.then(function () {
+  console.log('Done');
+});
 
-// 输出结果为
+// 输出如下：
 Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
-Wait: 1003
-Wait: 1000
-Wait: 1001
-2 6 3 100
+v1: 2
+v2: 6
+v3: 3
+v4: 100
+Done
+```
+
+　　上面的例子可以看出 async 函数的一些特点：
+
++ 异步操作（await 关键字标识的语句）可以同步操作同等看待，后续代码会等到异步操作完成返回结果后再执行
++ await 关键字虽然用于标识后面的语句是异步操作，但其后同样也可以跟随同步操作，如上例中的原始类型数值（100）。这样使 async 函数更具有通用性
++ async 函数会返回 Promise 对象，有统一的接口，方便调用，便于集成
+
+　　async 函数的另一个优点是可以捕获异步操作中抛出的异常，如下例子中未捕获异常时，代码会中断执行：
+
+``` javascript
+function asyncTask(hasErr) {
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      if (hasErr) {
+        reject('Throw error');
+      } else {
+        resolve(parseInt(Math.random() * 10));
+      }
+    }, 1000);
+  });
+}
+
+async function runTasks() {
+  var v1 = await asyncTask();
+  console.log('v1: ' + v1);
+  var v2 = await asyncTask(true);
+  console.log('v2: ' + v2);
+}
+
+runTasks();
+
+// 输出如下：
+v1: 5
+Uncaught (in promise) Throw error
+```
+
+　　可以在 async 函数中使用 try..catch.. 捕获异步回调函数中抛出的异常，如下：
+
+``` javascript
+function asyncTask(hasErr) {
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      if (hasErr) {
+        reject('Throw error');
+      } else {
+        resolve(parseInt(Math.random() * 10));
+      }
+    }, 1000);
+  });
+}
+
+async function runTasks() {
+  try {
+    var v1 = await asyncTask();
+    console.log('v1: ' + v1);
+    var v2 = await asyncTask(true);
+    console.log('v2: ' + v2);
+  } catch (e) {
+    console.log('Capture error');
+  }
+}
+
+runTasks();
+
+// 输出如下：
+v1: 1
+Capture error
 ```
