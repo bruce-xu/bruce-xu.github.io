@@ -79,7 +79,7 @@ function asyncTask() {
   return new Promise(function (resolve, reject) {
     setTimeout(function () {
       var now = new Date().getTime();
-      console.log('Wait: ' + (now - last));
+      console.log('Wait: ' + (now - last) + 'ms');
       last = now;
 
       resolve();
@@ -99,9 +99,9 @@ function runTasks() {
 runTasks();
 
 // 输出如下：
-Wait: 1001
-Wait: 1004
-Wait: 1002
+Wait: 1001ms
+Wait: 1004ms
+Wait: 1002ms
 Done
 ```
 
