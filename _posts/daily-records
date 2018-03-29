@@ -1,0 +1,24 @@
+---
+layout: post
+title:  日常细节记录
+date:   2018-03-29 00:00:00 +0800
+categories: [records, daily, JS, CSS, HTML, 技术, 细节, 记录]
+permalink: blogs/tech/daily-records
+tags: records
+keywords: records, daily
+---
+
+　　本文用于日常中的点滴技术记录，好记性不如烂笔头，记录细节，便于回顾。
+
+#### HTML ####
+
+#### JavaScript ####
+
+#### CSS ####
+
+#### ES6 ####
+
+#### ES6中let和const的作用域 ####
+
+#### 如何定义JS中对象的只读属性 ####
+
