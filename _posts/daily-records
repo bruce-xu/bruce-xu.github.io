@@ -17,6 +17,33 @@ keywords: records, daily
 #### CSS ####
 
 #### ES6 ####
+箭头函数：
+箭头函数有两个方面的作用：更简短的函数并且不绑定this（不绑定自己的this，arguments，super或 new.target）。
+在箭头函数出现之前，每个新定义的函数都有它自己的 this值（在构造函数的情况下是一个新对象，在严格模式的函数调用中为 undefined，如果该函数被称为“对象方法”则为基础对象等）
+箭头函数不会创建自己的this，它使用封闭执行上下文的this值。
+```
+var adder = {
+  base : 1,
+    
+  add : function(a) {
+    var f = v => v + this.base;
+    return f(a);
+  },
+
+  addThruCall: function(a) {
+    var f = v => v + this.base;
+    var b = {
+      base : 2
+    };
+            
+    return f.call(b, a);
+  }
+};
+
+console.log(adder.add(1));         // 输出 2
+console.log(adder.addThruCall(1)); // 仍然输出 2
+console.log(adder.addThruCall.call({base: 10}, 1)); // 仍然输出 11
+```
 
 #### ES6中let和const的作用域 ####
 
