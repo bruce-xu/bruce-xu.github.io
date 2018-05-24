@@ -12,9 +12,9 @@ keywords: records, daily
 
 #### HTML ####
 
-#### JavaScript ####
-
 #### CSS ####
+
+#### JavaScript ####
 
 #### ES6 ####
 箭头函数：
@@ -49,3 +49,6 @@ console.log(adder.addThruCall.call({base: 10}, 1)); // 仍然输出 11
 
 #### 如何定义JS中对象的只读属性 ####
 
+
+#### 浏览器 ####
+iOS Safari 11之前版本，无痕模式下，向localStorage、sessionStorage写数据时会抛出"QuotaExceededError"异常。
