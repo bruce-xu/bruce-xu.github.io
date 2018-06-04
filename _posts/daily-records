@@ -13,7 +13,8 @@ keywords: records, daily
 #### HTML ####
 
 #### CSS ####
-
+fixed：
+fixed元素默认相对于屏幕视口（viewport）的位置来定位，但当元素祖先的 transform 属性非 none 时，容器由视口改为该祖先。
 #### JavaScript ####
 
 #### ES6 ####
