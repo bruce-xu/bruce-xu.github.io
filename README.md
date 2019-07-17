@@ -1,3 +1,3 @@
 # 遇见的 Blog
 
-[主页](http://bruce-xu.github.io/)
+[主页](https://bruce-xu.github.io/)
